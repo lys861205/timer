@@ -52,8 +52,11 @@ int Timer::SetMinTime()
   if (timer_list_.empty()) {
     return -1;
   }
+  pthread_mutex_lock(&mutex_);
   TimerNode_t* node = timer_list_.best();
-  return SetTime(&node->timeout);
+  int ret = SetTime(&node->timeout);
+  pthread_mutex_unlock(&mutex_);
+  return ret;
 }
 
 int Timer::Run()
