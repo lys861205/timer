@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <time.h>
 
+#include <string>
+
 using namespace common;
 
 void func(std::string& str)
@@ -15,7 +17,7 @@ void timer_cb(int& a, uint64_t start_time)
   struct timespec end;
   clock_gettime(CLOCK_MONOTONIC, &end);
   uint64_t end_time = end.tv_sec * 1000000000ULL + end.tv_nsec;
-  printf("timer_cb %ld\n", (end_time - start_time)/1000000);
+  printf("timer_cb %llu\n", (end_time - start_time)/1000000);
   a = 0;
 }
 
@@ -29,6 +31,7 @@ void* thread_func(void* p)
   ptr->Add(20000, std::bind(timer_cb, std::ref(a), start_time));
   while (a);
   ptr->Cancel();
+  return NULL;
 }
 
 int main()

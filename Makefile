@@ -15,5 +15,5 @@ test_timer.o:test_timer.cc
 	$(CXX) -c $<  $(CXXFLAGS)
 
 clean:
-	rm -rf timer.o test_timer.o
+	rm -rf timer.o test_timer.o test_timer
 

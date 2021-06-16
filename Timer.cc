@@ -8,8 +8,13 @@ namespace common
 {
 
 Timer::Timer(int n):
+#ifdef __linux__
   epfd_(epoll_create(256)),
   timerfd_(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK|TFD_CLOEXEC)),
+#else 
+  epfd_(kqueue()),
+  timerfd_(dup(0)),
+#endif
   quit_(0),
   timer_list_(n)
 {
@@ -63,11 +68,16 @@ int Timer::Run()
 {
   SetEvent();
   int n;
-  struct epoll_event events[1];
   struct timespec abstime; 
   while (!quit_) {
     SetMinTime();
+#ifdef __linux__ 
+    struct epoll_event events[1];
     n = ::epoll_wait(epfd_, events, 1, -1);
+#else 
+    struct kevent events[1];
+    n = kevent(epfd_, NULL, 0, events, 1, NULL); 
+#endif 
     clock_gettime(CLOCK_MONOTONIC, &abstime);
     if (errno == EINTR) {
       continue;
