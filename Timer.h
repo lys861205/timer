@@ -73,7 +73,7 @@ private:
     return kevent(epfd_, &ev, 1, NULL, 0, NULL);
 #endif //
   }
-  inline int SetEvent()
+  inline int AddTimer()
   {
 #ifdef __linux__
     struct epoll_event ev;

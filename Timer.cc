@@ -66,7 +66,7 @@ int Timer::SetMinTime()
 
 int Timer::Run()
 {
-  SetEvent();
+  AddTimer();
   int n;
   struct timespec abstime; 
   while (!quit_) {
