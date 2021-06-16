@@ -51,6 +51,19 @@ public:
   int  Run();
   void Cancel();
 private:
+  inline int SetPipe()
+  {
+#ifdef __linux__ 
+    struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = pipefd_[0];
+    return ::epoll_ctl(epfd_, EPOLL_CTL_ADD, pipefd_[0], &ev);
+#else 
+    struct kevent ev;
+    EV_SET(&ev, pipefd_[0], EVFILT_READ, EV_ADD, 0, 0, (void*)&pipefd_[0]);
+    return kevent(epfd_, &ev, 1, NULL, 0, NULL);
+#endif 
+  }
   inline int SetTime(const struct timespec* abstime) 
   {
 #ifdef __linux__
@@ -99,6 +112,7 @@ private:
 private:
   int epfd_;
   int timerfd_;
+  int pipefd_[2];
   int quit_;
   Heap<TimerNode_t*, CmpTimerNode> timer_list_;
   pthread_mutex_t mutex_;

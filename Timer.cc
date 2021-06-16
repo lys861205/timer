@@ -18,6 +18,10 @@ Timer::Timer(int n):
   quit_(0),
   timer_list_(n)
 {
+  if (pipe(pipefd_) != 0) {
+    exit(-1);
+  }
+  SetPipe();
   mutex_ = PTHREAD_MUTEX_INITIALIZER;
   pthread_mutex_init(&mutex_, NULL);
 }
@@ -26,6 +30,8 @@ Timer::~Timer()
 {
   ::close(epfd_);
   ::close(timerfd_);
+  ::close(pipefd_[0]);
+  ::close(pipefd_[1]);
   pthread_mutex_destroy(&mutex_);
 }
 
@@ -72,12 +78,26 @@ int Timer::Run()
   while (!quit_) {
     SetMinTime();
 #ifdef __linux__ 
-    struct epoll_event events[1];
-    n = ::epoll_wait(epfd_, events, 1, -1);
+    struct epoll_event events[2];
+    n = ::epoll_wait(epfd_, events, 2, -1);
 #else 
-    struct kevent events[1];
-    n = kevent(epfd_, NULL, 0, events, 1, NULL); 
+    struct kevent events[2];
+    n = kevent(epfd_, NULL, 0, events, 2, NULL); 
 #endif 
+    int fd;
+    for (int i=0; i < n; ++i) {
+#ifdef __linux__ 
+      fd = events[i].data.fd; 
+#else 
+     if (events[i].udata) {
+      fd = *(int*)events[i].udata;
+     }
+#endif 
+      if (fd == pipefd_[0]) {
+        printf("loop quit.\n");
+        break;
+      }
+    }
     clock_gettime(CLOCK_MONOTONIC, &abstime);
     if (errno == EINTR) {
       continue;
@@ -92,6 +112,7 @@ int Timer::Run()
 void Timer::Cancel()
 {
   quit_ = 1;
+  write(pipefd_[1], &quit_, sizeof(quit_));
 }
 
 int Timer::HandleTimeout(const struct timespec* abstime)
